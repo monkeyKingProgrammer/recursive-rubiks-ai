@@ -7,7 +7,7 @@ tags:
   - Artificial Intelligence
   - Combinatorial Optimization
 authors:
-  - name: Chan Seng Tham
+  - name: [Your Full Name]
     affiliation: 1
 affiliations:
  - name: Independent Researcher
@@ -86,6 +86,11 @@ We trained both the Baseline and the Curriculum model. We then evaluated both mo
 
 *Note: 8.33% represents random guessing (1 out of 12).*
 
+**Training Dynamics:**
+As shown in Figure 1, the Curriculum approach allows the model to stabilize at lower recursion depths (e.g., Depth 4, Loss ~1.5) before transferring that knowledge to deeper recursion levels. This gradual adaptation prevents the gradient explosion typically seen in deep recurrent networks.
+
+![Training logs showing the Curriculum Schedule. The model is trained sequentially at Depths 4, 6, 8, 12, 16, and 20. Note the stability of the loss function as depth increases, indicating successful transfer learning between recursion levels.](Fig1.png)
+
 ## Experiment 2: Inference Capabilities
 We subjected the trained Curriculum model to "Live Solving" tests on unseen scrambles. For each target depth *d* in {5, 10, 20}, we generated 100 test scrambles. We decoded the solutions using **Beam Search (width 8)**.
 
@@ -97,10 +102,14 @@ We subjected the trained Curriculum model to "Live Solving" tests on unseen scra
 * **Solve Rate:** 100%
 * **Efficiency:** The model frequently found shortcuts.
 
+![Successful solves at Depth 5 and Depth 10. Notation U/D/L/R/F/B refers to face rotations. In the second example (Depth 10), the model identifies a highly efficient 6-move solution to a 10-move scramble, demonstrating non-trivial reasoning capabilities.](Fig2.png)
+
 **Result C: Long Horizon (Depth 20)**
 * **Solve Rate:** ~10% (Greedy/Beam Search)
 * **Failure Mode:** "Greedy Loops."
 * *Observation:* At high depths, the model enters repetitive cycles (e.g., R -> L -> R -> L). Despite high confidence in individual moves (> 40%), the lack of a global value function prevents the model from escaping local minima in the state space.
+
+![Failure mode at Depth 20. The model enters a high-confidence "Greedy Loop," alternating between moves (e.g., U and U') without making progress toward the solved state. This illustrates the limitation of pure Next-Token Prediction for long-horizon planning.](Fig3.png)
 
 # Discussion
 
