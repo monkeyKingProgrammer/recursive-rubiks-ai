@@ -7,7 +7,7 @@ tags:
   - Artificial Intelligence
   - Combinatorial Optimization
 authors:
-  - name: [Your Full Name]
+  - name: Chan Seng Tham
     affiliation: 1
 affiliations:
  - name: Independent Researcher
@@ -22,7 +22,7 @@ Recent developments in Large Language Models (LLMs) suggest that "Test-Time Comp
 
 # Statement of Need
 
-The scaling laws of deep learning have traditionally focused on increasing parameter counts and dataset sizes [@kaplan2020scaling]. However, a new paradigm is emerging: The **Test-Time Compute** hypothesis [@graves2016adaptive; @wei2022chain] posits that for specific classes of problems—such as arithmetic, logic puzzles, and combinatorial planning—performance scales not just with model size but also with the duration of inference.
+The scaling laws of deep learning have traditionally focused on increasing parameter counts and dataset sizes [@kaplan2020scaling]. However, a new paradigm is emerging: The **Test-Time Compute** hypothesis [@graves2016adaptive; @wei2022chain] posits that for specific classes of problems—such as arithmetic, logic puzzles, and combinatorial planning—performance scales not just with model size but also with the duration of inference (the amount of "thinking time" allotted).
 
 Implementing this capability requires an architecture that can apply a transformation function *f* repeatedly to its own output: *h(t+1) = f(h(t))*. While Recurrent Neural Networks (RNNs) and Universal Transformers [@dehghani2019universal] offer this capability, training them over long horizons is notoriously difficult. As the recursion depth *N* increases, backpropagating gradients through time (BPTT) becomes unstable [@pascanu2013difficulty], leading to vanishing or exploding gradients that prevent the model from learning the relationship between the input state and the desired output.
 
@@ -31,6 +31,28 @@ In this paper, we use the 2x2 Rubik's Cube as a proxy for complex non-linear rea
 1.  **The Limits of Recursion:** We empirically show that a Transformer fails to learn when initialized at a high recursion depth (*N=20*) using standard optimization.
 2.  **Curriculum Stabilization:** We demonstrate that progressively increasing *N* during training allows the model to learn stable, identity-preserving transformations [@bengio2009curriculum].
 3.  **The Greedy Trap:** We analyze the failure mode of the model at high depths, showing that even a well-trained recursive network falls into repetitive loops without a value function, highlighting the necessity of beam search or tree search for long-horizon planning [@agostinelli2019solving].
+
+# State of the Field
+
+## Neural Combinatorial Optimization
+Combinatorial optimization problems, such as the Traveling Salesman Problem (TSP) or the Rubik's Cube, operate in discrete state spaces that grow factorially. Traditional approaches rely on exact algorithms like A* Search [@hart1968formal] or heuristics like Korf’s Algorithm [@korf1985depth].
+
+In the era of deep learning, Pointer Networks [@vinyals2015pointer] and Sequence-to-Sequence models [@sutskever2014sequence] first demonstrated that neural networks could approximate solutions to combinatorial problems. This line of work evolved into the field of "Neural Combinatorial Optimization." Agostinelli et al. [@agostinelli2019solving] achieved a breakthrough with **DeepCubeA**, which solved the 3x3 Rubik's Cube using Deep Reinforcement Learning (DRL) and a weighted A* search. However, DeepCubeA relied on a massive computational budget and a separate Value Network. Our work differs by investigating the limits of a purely **Supervised Policy Network** operating under strict parameter constraints.
+
+## System 1 vs. System 2 Deep Learning
+Cognitive science distinguishes between "System 1" (fast, intuitive) and "System 2" (slow, logical) thinking [@kahneman2011thinking]. Standard feed-forward neural networks, such as ResNet [@he2016deep] or BERT [@devlin2019bert], are analogous to System 1: they map input to output in a fixed computational path.
+
+Recent research argues that for Deep Learning to achieve generalization in logic and planning, it must adopt System 2 characteristics. Bengio [@bengio2017consciousness] proposed the "Conscious Prior," suggesting that high-level reasoning requires iterative processing of a low-dimensional state. This theoretical framework supports our architectural choice: by forcing the TRM to loop its hidden state 20 times, we simulate a System 2 process where the model "ponders" the state of the cube.
+
+## The Evolution of Adaptive Compute
+The concept of decoupling model depth from parameter count has a rich history. Graves [@graves2016adaptive] introduced **Adaptive Computation Time (ACT)** for RNNs. This was later adapted to Transformers in the **Universal Transformer** [@dehghani2019universal]. More recently, **PonderNet** [@banino2021pondernet] framed the halting decision as a probabilistic geometric distribution.
+
+Our work isolates the stability problem by fixing the inference depth and focusing on the **curriculum-learning** aspect. We build upon the findings of **ALBERT** [@lan2019albert], which demonstrated that cross-layer parameter sharing acts as a regularizer, stabilizing training.
+
+## Curriculum Learning in Recursive Systems
+Curriculum Learning [@bengio2009curriculum] is the strategy of training on easy samples before hard ones. Zaremba and Sutskever [@zaremba2014learning] showed that training LSTMs to execute code required a curriculum of increasing program length.
+
+Our findings align with the "smoothing hypothesis" of curriculum learning. By starting with Depth 4, we smooth the loss landscape. As we increase the depth to 20, the model learns to maintain the stability of the vector representation over longer time horizons. This technique is architecturally similar to the "Progressive Growing" strategy used in GANs [@karras2017progressive].
 
 # Methodology
 
@@ -120,5 +142,30 @@ Our results highlight a crucial dichotomy in Neural Reasoning.
 **2. The Limits of Supervised Greedy Search:** The failure at Depth 20 indicates that "Next-Token Prediction" (or Next-Move Prediction) is insufficient on its own for long-horizon planning in this environment without search or a learned value function. While the model knows *valid* moves, it lacks a mechanism to judge *progress* toward the solved state.
 
 **Conclusion:** We successfully stabilized the training of deep recursive networks using Curriculum Learning. While the TRM excels at short-to-medium term reasoning (Depth 10), solving deep combinatorial problems (Depth 20+) likely requires augmenting the recursive "intuition" with explicit search mechanisms (MCTS) or Reinforcement Learning value estimators.
+
+# Appendix A: Model Card
+
+**Model Name:** Tiny Recursive Model (TRM-D20)
+
+**Model Details:**
+* **Architecture:** Recursive Transformer (Shared Weights).
+* **Parameters:** 793,600 (approx. 0.8M).
+* **Input:** 24-integer array representing the 2x2 Rubik's Cube state.
+* **Output:** Probability distribution over 12 possible next moves.
+* **Recursion Depth:** Trained dynamically (curriculum 4->20); Fixed at 20 for inference.
+
+**Intended Use:**
+* Research into Test-Time Compute and Recursive Deep Learning.
+* Algorithmic reasoning and permutation group navigation.
+* Comparison baseline for Reinforcement Learning solvers.
+
+**Limitations:**
+* **Greedy Traps:** Without search augmentation (MCTS), the model fails on scrambles exceeding 18-20 moves.
+* **Deterministic Only:** The model is specialized for the deterministic physics of the Pocket Cube.
+
+**Training Data:**
+* **Source:** Procedurally generated (Infinite Reverse Scramble).
+* **Method:** Supervised Learning (Cross-Entropy Loss) on next-move prediction.
+* **Curriculum:** Stepwise increase in look-back horizon (4, 5, 6, 8, 12, 16, 20 steps).
 
 # References
